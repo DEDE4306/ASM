@@ -1,0 +1,102 @@
+STKSEG SEGMENT STACK
+    DW 32 DUP(0)
+STKSEG ENDS
+
+DATASEG SEGMENT
+    NUM1 DB 1
+    NUM2 DB 1
+    RESULT DB 1
+DATASEG ENDS
+
+CODESEG SEGMENT
+    ASSUME CS: CODESEG, DS: DATASEG
+
+MAIN PROC FAR
+    MOV AX, DATASEG
+    MOV DS, AX
+
+    MOV NUM1, 1
+OUTER_LOOP:
+    MOV NUM2, 1
+INNER_LOOP:
+    MOV AL, NUM1
+    MOV BL, NUM2
+    MUL BL
+    MOV RESULT, AL
+    MOV DH, 0
+
+    MOV DL, NUM1
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+
+    MOV DL, '*'
+    MOV AH, 02H
+    INT 21H
+
+    MOV DL, NUM2
+    ADD DL, 30H
+    MOV AH, 02H
+    INT 21H
+
+    MOV DL, '='
+    MOV AH, 02H
+    INT 21H
+
+    MOV DL, RESULT
+    CALL PRINT_NUM
+
+    ;打印两个空格
+    MOV DL, 20H
+    INT 21H
+    MOV DL, 20H
+    INT 21H
+
+    INC NUM2
+    MOV AL, NUM1
+    CMP AL, NUM2
+    JAE INNER_LOOP
+
+    ; 打印换行
+    MOV DL, 0AH
+    MOV AH, 02H
+    INT 21H
+
+    INC NUM1
+    CMP NUM1, 10
+    JNE OUTER_LOOP
+    
+    
+    MOV AX, 4C00H
+    INT 21H
+
+MAIN ENDP
+
+;将 DX 中的数字转换成字符串打印
+PRINT_NUM PROC
+    MOV AX, DX
+    MOV BX, 10
+    MOV SI, 0
+
+CONVERT_LOOP:
+    XOR DX, DX      ;清空 DX 寄存器
+    DIV BX          ;商位于 AX 寄存器，余数位于 DX 寄存器
+    ADD DL, '0'
+    PUSH DX
+    INC SI
+    CMP AX, 0
+    JNZ CONVERT_LOOP
+
+PRINT_DIGITS:
+    POP DX
+    MOV AH, 02H
+    INT 21H
+    DEC SI
+    JNZ PRINT_DIGITS
+    RET
+    
+PRINT_NUM ENDP
+
+
+CODESEG ENDS
+    END MAIN
